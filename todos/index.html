@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.staticfile.org/react/16.4.0/umd/react.development.js"></script>
+    <script src="https://cdn.staticfile.org/react-dom/16.4.0/umd/react-dom.development.js"></script>
+    <!-- 生产环境中不建议使用 -->
+    <script src="https://cdn.staticfile.org/babel-standalone/6.26.0/babel.min.js"></script>
+    <script src="./pubsub.js"></script>
+</head>
+<body>
+    <div id="examle"></div>
+    
+    <script type="text/babel">
+        const data = [
+                {name: '小明', gender: '女', age: 18, height: 123, weigth: 123, _id: 2},
+                {name: '小红', gender: '男', age: 18, height: 123, weigth: 123, _id: 1},
+                {name: '小蓝', gender: '女', age: 18, height: 123, weigth: 123, _id: 3},
+                {name: '小绿', gender: '男', age: 18, height: 123, weigth: 123, _id: 0},
+                {name: '小紫', gender: '男', age: 18, height: 123, weigth: 123, _id: 4},
+                {name: '小粉', gender: '女', age: 18, height: 123, weigth: 123, _id: 8},
+                {name: '小黑', gender: '女', age: 18, height: 123, weigth: 123, _id: 9}
+            ]
+
+        class StudentApp extends React.Component {
+            
+            constructor(props) {
+                super(props);
+                this.state = {
+                    studentData: data,
+                    genderValue: 'all',
+                    changeName: ''
+                }
+            }
+
+            genderFilterHandle (e) {
+                this.setState({genderValue: e.target.value})
+            }
+
+            nameFilterHandle (e) {
+                this.setState({changeName: e.target.value})
+            }
+
+            componentDidMount () {
+                PubSub.subscribe("deleteItem", function(evName, _id){
+                    console.log(this.state.studentData)
+                    let newArr = this.state.studentData.filter(function (item) {
+                        return item._id !== _id
+                    })
+                    this.setState({studentData: newArr})
+                }.bind(this))
+            }
+
+            render () {
+                return (
+                    <div>
+                        <h1>学院信息表</h1>
+                        <div className="bs-example">
+                            <div className="form-group">
+                                <label>按性别筛选</label>
+                                <select className="form-control" onChange={this.genderFilterHandle.bind(this)}>
+                                    <option value="all">all</option>
+                                    <option value="1">男</option>
+                                    <option value="0">女</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>按名字筛选</label>
+                                <input onKeyUp={this.nameFilterHandle.bind(this)} type="text" className="form-control" placeholder="请输入您的名字"/>
+                            </div>
+                            <StudentInfoComponent 
+                                studentData = {this.state.studentData}
+                                genderValue = {this.state.genderValue}
+                                changeName = {this.state.changeName}
+                            />
+                        </div>
+                    </div>
+                )
+            }
+        }
+
+        function StudentInfoComponent (props) {
+            
+            let list = []
+            let genderVal = props.genderValue
+            let genderAll = ["女", "男", ""]
+            let changeName = props.changeName
+            
+            props.studentData.forEach((element, index) => {
+                if (genderVal !== 'all' && changeName === "") {
+                    
+                    if (genderAll[genderVal] === element.gender) {
+                        list.push(<StudentItemComponent studentElement={element} key={element._id}/>)
+                    }
+                    return
+                }
+
+                if (changeName !== "") {
+                    if (genderVal !== "all") {
+                        if (changeName === element.name && genderAll[genderVal] === element.gender) {
+                            list.push(<StudentItemComponent studentElement={element} key={element._id}/>)
+                        }
+                    } else {
+                        if (changeName === element.name) {
+                            list.push(<StudentItemComponent studentElement={element} key={element._id}/>)
+                        }
+                    }
+                    return
+                }
+
+                list.push(<StudentItemComponent studentElement={element} key={element._id}/>)
+                
+            });
+
+            return (
+                <div className="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>性别</th>
+                                <th>年龄</th>
+                                <th>身高</th>
+                                <th>体重</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {list}
+                        </tbody>
+                    </table>
+                </div>
+            )
+        }
+
+        function StudentItemComponent (props) {
+
+            function deleteItem () {
+                PubSub.publish("deleteItem", props.studentElement._id)
+            }
+
+            let item = props.studentElement
+            return (
+                <tr>
+                    <td>{item.name}</td>
+                    <td>{item.gender}</td>
+                    <td>{item.age}</td>
+                    <td>{item.height}</td>
+                    <td>{item.weigth}</td>
+                    <td><a href="javacript:void(0);" onClick={deleteItem}>删除</a></td>
+                </tr>
+            )
+        }
+
+        ReactDOM.render(
+            <StudentApp />,
+            document.getElementById("examle")
+        )
+    </script>
+</body>
+</html>
